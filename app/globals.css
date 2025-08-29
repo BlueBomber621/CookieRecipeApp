@@ -1,0 +1,122 @@
+@import "tailwindcss";
+
+:root {
+  --background: #ffffe5;
+  --shade: #f9f8db;
+  --foreground: #252520;
+  --foregroundshade: #1f1f15;
+}
+
+@theme {
+  /* Pastel Yellow */
+  --color-pastelyellow-50: #fffdf5;
+  --color-pastelyellow-100: #fff9e6;
+  --color-pastelyellow-200: #fff4cc;
+  --color-pastelyellow-300: #ffefb3;
+  --color-pastelyellow-400: #ffe999;
+  --color-pastelyellow-500: #ffe380;
+  --color-pastelyellow-600: #e6cc73;
+  --color-pastelyellow-700: #b3a356;
+  --color-pastelyellow-800: #806a39;
+  --color-pastelyellow-900: #4d3f1c;
+
+  /* Pastel Magenta */
+  --color-pastelmagenta-50: #fff5f9;
+  --color-pastelmagenta-100: #ffe6f0;
+  --color-pastelmagenta-200: #ffcce1;
+  --color-pastelmagenta-300: #ffb3d2;
+  --color-pastelmagenta-400: #ff99c3;
+  --color-pastelmagenta-500: #ff80b4;
+  --color-pastelmagenta-600: #e673a2;
+  --color-pastelmagenta-700: #b3567d;
+  --color-pastelmagenta-800: #803a58;
+  --color-pastelmagenta-900: #4d1d33;
+
+  /* Pastel Green */
+  --color-pastelgreen-50: #f5fff9;
+  --color-pastelgreen-100: #e6fff2;
+  --color-pastelgreen-200: #ccffe6;
+  --color-pastelgreen-300: #b3ffd9;
+  --color-pastelgreen-400: #99ffcc;
+  --color-pastelgreen-500: #80ffbf;
+  --color-pastelgreen-600: #73e6ac;
+  --color-pastelgreen-700: #56b386;
+  --color-pastelgreen-800: #398060;
+  --color-pastelgreen-900: #1c4d3a;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --background: #0f0f08;
+    --shade: #10100c;
+    --foreground: #ececdd;
+    --foregroundshade: #dadac2;
+  }
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: Arial, Helvetica, sans-serif;
+}
+
+input,
+textarea {
+  background: var(--shade);
+  color: var(--foreground);
+  border: 2px solid var(--foreground);
+  border-radius: 0.375rem;
+}
+
+input:hover,
+textarea:hover {
+  border-color: var(--foregroundshade);
+}
+
+input:active,
+textarea:active {
+  border-style: dashed;
+}
+
+/* Base button style */
+.btn {
+  @apply inline-flex items-center justify-center
+         font-medium rounded-md
+         transition-colors duration-200
+         focus:outline-none focus:ring-2 focus:ring-offset-2;
+}
+
+/* Variants */
+.btn-primary {
+  @apply bg-pastelyellow-500 text-black
+         hover:bg-pastelyellow-600
+         focus:ring-pastelyellow-400;
+}
+
+.btn-secondary {
+  @apply bg-pastelgreen-500 text-black
+         hover:bg-pastelgreen-600
+         focus:ring-pastelgreen-400;
+}
+
+.btn-danger {
+  @apply bg-red-500 text-white
+         hover:bg-red-600
+         focus:ring-red-400;
+}
+
+/* Sizes */
+.btn-sm {
+  @apply px-3 py-1 text-sm;
+}
+
+.btn-lg {
+  @apply px-6 py-3 text-lg;
+}
