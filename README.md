@@ -30,11 +30,21 @@ This also will require a Google account to use all functionalities within this a
 
 In order to start using this app, you need to create a .env.local file in the _root directory_.
 
-In the .env file, put in:
+In the .env.local file, put in:
 
-`FIREBASE_PROJECT_ID=`
-`FIREBASE_CLIENT_EMAIL=`
-`FIREBASE_PRIVATE_KEY=`
+```
+FIREBASE_PROJECT_ID=
+FIREBASE_CLIENT_EMAIL=
+FIREBASE_PRIVATE_KEY=
+
+NEXT_PUBLIC_FIREBASE_API_KEY=
+NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN=
+NEXT_PUBLIC_FIREBASE_PROJECT_ID=
+NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET=
+NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID=
+NEXT_PUBLIC_FIREBASE_APP_ID=
+NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID=
+```
 
 **The values you will put in these are NOT to be shared with anyone!**
 
@@ -46,9 +56,9 @@ To test the API routes, you need a firebase project, and to perform some setup.
 
 After making the firebase project, in the project overview, go to 'Add app'.
 
-Follow through the instructions, you don't need to activate Firebase Hosting. When you get your firebase app information, copy your app settings/config.
+Follow through the instructions, you don't need to activate Firebase Hosting. When you get your firebase app information, copy your app settings/config or leave it up.
 
-Go into /lib/index_example.js, and paste the config as directed in the comments in the file, and rename the js file to "index.js".
+Go into your .env.local, set each of the 'NEXT*PUBLIC*...' variables to their respective values your firebase app provided from the shown "firebaseConfig" area.
 
 Now you've set up the client app properly, next you will need a service account for your firebase project. Go to Project Settings, the gear by Project Overview, and select the Service accounts tab. In Firebase Admin SDK, create a new private key. This should download a file, **do not share it**, open it to view your private values. Go into your .env.local file you should have created earlier. Use 'project_id' as the value for 'FIREBASE_PROJECT_ID', use 'client_email' as the value for 'FIREBASE_CLIENT_EMAIL', and use all of 'private_key' as the value for 'FIREBASE_PRIVATE_KEY'
 
