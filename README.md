@@ -58,7 +58,7 @@ After making the firebase project, in the project overview, go to 'Add app'.
 
 Follow through the instructions, you don't need to activate Firebase Hosting. When you get your firebase app information, copy your app settings/config or leave it up.
 
-Go into your .env.local, set each of the 'NEXT*PUBLIC*...' variables to their respective values your firebase app provided from the shown "firebaseConfig" area.
+Go into your .env.local, set each of the '`NEXT_PUBLIC_...`' variables to their respective values your firebase app provided from the shown "firebaseConfig" area.
 
 Now you've set up the client app properly, next you will need a service account for your firebase project. Go to Project Settings, the gear by Project Overview, and select the Service accounts tab. In Firebase Admin SDK, create a new private key. This should download a file, **do not share it**, open it to view your private values. Go into your .env.local file you should have created earlier. Use 'project_id' as the value for 'FIREBASE_PROJECT_ID', use 'client_email' as the value for 'FIREBASE_CLIENT_EMAIL', and use all of 'private_key' as the value for 'FIREBASE_PRIVATE_KEY'
 
