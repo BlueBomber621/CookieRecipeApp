@@ -58,6 +58,67 @@ You will now additionally have to initialize your user, sign in with Google as y
 
 When you log in with Google, it should add a user to Firebase Authentication. In the Build in the sidebar under the small Project Categories label, go to Authentication, and you should see your user in the 'Users' tab. There is the user ID (UID) as a value at the right of the user instance, and there should be a button to copy UID, select it and copy the UID. In the project sidebar go to Firestore Database under Build. Select your database of choice. In your database, under the Data tab which should be where you are at by default, select Start collection, name the collection ID "admins" and continue. Paste the UID into the ID of the document makign the document ID the UID, and you may name a string value "uid" and paste the UID as the value.
 
+In the database page, go to the 'Rules' tab. Take away the code and paste this code in:
+
+```
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Helpers
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(uid) {
+      return isSignedIn() && request.auth.uid == uid;
+    }
+
+    function isAdmin() {
+      return isSignedIn() && (
+        request.auth.token.admin == true ||
+        exists(/databases/$(database)/documents/admins/$(request.auth.uid))
+      );
+    }
+
+    // Recipes
+    match /recipes/{id} {
+      // read is public
+      allow read: if resource.data.validated == true
+              || (request.auth != null && resource.data.ownerId == request.auth.uid)
+              || isAdmin();
+
+      // when not an admin and signed in, create while unvalidated
+      allow create: if (
+          isSignedIn()
+          && request.resource.data.ownerId == request.auth.uid
+          && request.resource.data.validated == false
+        )
+        || isAdmin();
+
+      // update and delete are allowed where
+      //  owners can request updates or deletes
+      //  admins can do unrestricted
+      allow update, delete: if
+        (
+          isOwner(resource.data.ownerId)
+          && request.resource.data.ownerId == resource.data.ownerId
+          && request.resource.data.validated == resource.data.validated
+        )
+        || isAdmin();
+    }
+
+    // Admins
+    match /admins/{uid} {
+      allow read: if false;   // if false to hide list
+      allow write: if false;  // if false to force server-only writes
+    }
+  }
+}
+```
+
+Then publish changes to update your rules.
+
 After you will need to go back into the database page and go to the 'Indexes' tab. Select 'Add Index', and under the collection ID field enter in "recipes". In the fields to index, set the first field path to "createdAt", and set the order to "Decending". In the second, set the field path to "validated" and keep it as "Ascending". Select "Add Field" once, and in the new third field set the field path to "`__name__`", that is with two underscores on each side, and keep the order as "Ascending". You should keep the query scope as "Collection", and then select 'Create'. This will take some time to complete the creation of the index.
 
 Now if you followed all these steps, your project should be ready to test with `npm run dev`! You can navigate to the pages and perform whatever actions you wish!
