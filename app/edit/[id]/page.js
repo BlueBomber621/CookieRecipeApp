@@ -1,43 +1,86 @@
 "use client";
 
-import { auth } from "@/lib/firebase";
+import { auth, db } from "@/lib/firebase";
 import { appContext } from "@/lib/store/app-context";
 import { authContext } from "@/lib/store/auth-context";
+import { doc, getDoc } from "firebase/firestore";
 import { notFound, redirect, useParams } from "next/navigation";
 import { useEffect, useState, useContext } from "react";
-import { FaInfoCircle } from "react-icons/fa";
+import { FaInfoCircle, FaMinus } from "react-icons/fa";
 
 export default function RecipePage({ params }) {
   const { id } = useParams();
-  const { recipes, loading, editRecipe, deleteRecipe } = useContext(appContext);
-  const { user } = useContext(authContext);
-  const recipe = recipes.find((r) => r.id === id);
+  const {
+    recipes,
+    loading: recipeLoading,
+    editRecipe,
+    deleteRecipe,
+  } = useContext(appContext);
+  const { user, loading: authLoading } = useContext(authContext);
+  const [recipe, setRecipe] = useState(null);
+  const [pending, setPending] = useState(true);
   const [missingArmed, setMissingArmed] = useState(false);
   const [authorized, setAuthorized] = useState(false);
 
   useEffect(() => {
-    if (loading) {
+    let canceled = false;
+
+    async function run() {
+      if (authLoading || recipeLoading || !user) {
+        setMissingArmed(false);
+        return;
+      }
+
+      const initRecipe = recipes.find((r) => r.id === id);
+      if (initRecipe) {
+        if (!canceled) {
+          if (initRecipe.ownerId == user.uid) {
+            setRecipe(initRecipe);
+            setAuthorized(true);
+          } else {
+            setAuthorized(false);
+          }
+          setPending(false);
+          setMissingArmed(true);
+        }
+        return;
+      }
+
+      setPending(true);
       setMissingArmed(false);
-      return;
-    }
-    if (!recipe) {
-      const t = setTimeout(() => setMissingArmed(true), 150);
-      return () => clearTimeout(t);
-    }
-    if (!user) {
-      const t = setTimeout(() => {
-        if (!user) redirect("/");
-      }, 150);
-      return () => clearTimeout(t);
-    }
-    const isOwner = user && !!user && user.uid === recipe.ownerId;
-    if (!isOwner) {
-      redirect("/");
+
+      try {
+        const snap = await getDoc(doc(db, "recipes", id));
+        if (!snap.exists()) {
+          if (!canceled) {
+            setMissingArmed(true);
+            setPending(true);
+          }
+          return;
+        }
+        const data = { id: snap.id, ...snap.data() };
+        if (!canceled) {
+          if (data.ownerId == user.uid) {
+            setRecipe(data);
+            setAuthorized(true);
+          } else {
+            setAuthorized(false);
+          }
+          setPending(false);
+        }
+      } catch {
+        if (!canceled) {
+          setMissingArmed(true);
+          setPending(false);
+        }
+      }
     }
 
-    setMissingArmed(false);
-    setAuthorized(true);
-  }, [loading, recipe, user]);
+    run();
+    return () => {
+      canceled = true;
+    };
+  }, [recipeLoading, authLoading, recipes, user]);
 
   useEffect(() => {
     if (!authorized || !recipe) return;
@@ -80,7 +123,8 @@ export default function RecipePage({ params }) {
   const [showIngredientTip, setShowIngredientTip] = useState(false);
   const [instructionListLength, setInstructionListLength] = useState(1);
   const [showInstructionTip, setShowInstructionTip] = useState(false);
-  const [isOwnerRecipe, setIsOwnerRecipe] = useState(false);
+  const [categoryInput, setCategoryInput] = useState("");
+  const [showCategoryTip, setShowCategoryTip] = useState(false);
 
   function ClampInt(value, max, min, nullValue) {
     if (Number.isNaN(value)) return nullValue;
@@ -149,6 +193,36 @@ export default function RecipePage({ params }) {
     });
   }
 
+  function CommitCategory(input) {
+    if (!input.toLowerCase().trim()) return;
+    setFormData((prev) => ({
+      ...prev,
+      categories: Array.from(
+        new Set([...(prev.categories ?? []), input.toLowerCase().trim()])
+      ),
+    }));
+    setCategoryInput("");
+  }
+
+  function OnCategoryAdd(e) {
+    e.preventDefault();
+    CommitCategory(categoryInput);
+  }
+
+  function OnCategoryKeyDown(e) {
+    if (e.key === "Enter" || e.key === ",") {
+      e.preventDefault();
+      CommitCategory(categoryInput);
+    }
+  }
+
+  function OnCategoryRemove(category) {
+    setFormData((prev) => ({
+      ...prev,
+      categories: (prev.categories ?? []).filter((c) => c !== category),
+    }));
+  }
+
   function HandleFormSubmit(e) {
     e.preventDefault();
     editRecipe(formData, id);
@@ -160,24 +234,18 @@ export default function RecipePage({ params }) {
     redirect("/");
   }
 
-  if (!authorized) {
+  if (recipeLoading || authLoading || pending) {
     return (
       <div className="p-10">
-        <div className="w-full min-h-[320px] rounded-2xl bg-neutral-200/80 animate-pulse shadow-sm" />
+        <div className="w-full min-h-[380px] rounded-2xl bg-neutral-200/80 animate-pulse shadow-sm" />
       </div>
     );
   }
 
-  if (!authorized && !loading && !recipe && missingArmed) return notFound();
-  if (!isOwnerRecipe && !loading && missingArmed) return redirect("/");
-
-  if (loading) {
-    return (
-      <div className="p-10">
-        <div className="w-full min-h-[320px] rounded-2xl bg-neutral-200/80 animate-pulse shadow-sm" />
-      </div>
-    );
-  }
+  if (authorized && !recipeLoading && !recipe && missingArmed && !pending)
+    return notFound();
+  if (!authorized && !authLoading && missingArmed && !pending)
+    return redirect("/");
 
   return (
     <div className="flex flex-col p-10">
@@ -422,11 +490,87 @@ export default function RecipePage({ params }) {
                 })}
               </div>
             </div>
+            <div className="flex flex-col gap-2">
+              <div className="flex items-center gap-2">
+                <label
+                  className="text-sm md:text-md font-bold color-pastelyellow-800 dark:color-pastelyellow-100"
+                  htmlFor="categoryInput"
+                >
+                  Add Categories:
+                </label>
+
+                <input
+                  className="w-[200px] pl-2"
+                  id="categoryInput"
+                  name="categoryInput"
+                  type="text"
+                  maxLength={72}
+                  placeholder='e.g. "vegetarian", "quick"'
+                  value={categoryInput}
+                  onChange={(e) => setCategoryInput(e.target.value)}
+                  onKeyDown={OnCategoryKeyDown}
+                />
+
+                <button
+                  type="button"
+                  className="btn btn-primary px-2 rounded-md border"
+                  onClick={OnCategoryAdd}
+                >
+                  Add
+                </button>
+              </div>
+              <div className="flex">
+                <div className="w-[16px] h-[16px]">
+                  <FaInfoCircle
+                    fill="var(--color-pastelgreen-500)"
+                    onClick={() => {
+                      setShowCategoryTip(!showCategoryTip);
+                    }}
+                  />
+                </div>
+
+                {showCategoryTip ? (
+                  <p className="text-sm md:text-md text-center text-pastelyellow-800 dark:text-pastelyellow-100">
+                    Category entries should be keywords you would use to
+                    describe this recipe. Refrain from arbitrarily long
+                    descriptors in a single category entry. 1-2 word entries may
+                    work best.
+                  </p>
+                ) : null}
+              </div>
+              {formData.categories.length > 0 ? (
+                <div className="flex flex-col gap-1 p-4 bg-background w-full rounded-md min-h-[44px]">
+                  <div className="flex flex-wrap gap-2">
+                    {(formData.categories ?? []).map((category) => (
+                      <span
+                        key={category}
+                        className="inline-flex items-center gap-1 px-2 py-1 rounded-full border text-sm"
+                      >
+                        {category}
+                        <button
+                          type="button"
+                          className="ml-1 text-xs opacity-70 hover:opacity-100"
+                          onClick={() => OnCategoryRemove(category)}
+                          aria-label={`Remove ${category}`}
+                          title="Remove"
+                        >
+                          <FaMinus />
+                        </button>
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              ) : null}
+            </div>
             <p className="text-sm md:text-md text-center text-red-500">
               Warning: Editing a recipe will result in the recipe requiring
               admin re-validation!
             </p>
-            <button type="submit" className="btn btn-primary">
+            <button
+              type="submit"
+              className="btn btn-primary"
+              aria-label="Submit Recipe Update"
+            >
               Edit Recipe
             </button>
           </form>

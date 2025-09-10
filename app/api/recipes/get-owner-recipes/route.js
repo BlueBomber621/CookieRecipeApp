@@ -3,7 +3,7 @@ export const runtime = "nodejs";
 import { NextResponse } from "next/server";
 import { getApps, initializeApp, cert } from "firebase-admin/app";
 import { getAuth } from "firebase-admin/auth";
-import { getFirestore, FieldValue } from "firebase-admin/firestore";
+import { getFirestore } from "firebase-admin/firestore";
 
 if (!getApps().length) {
   initializeApp({
@@ -13,6 +13,11 @@ if (!getApps().length) {
       privateKey: process.env.FIREBASE_PRIVATE_KEY.replace(/\\n/g, "\n"),
     }),
   });
+}
+
+function ForceCountInt(num) {
+  const newNum = Math.trunc(Math.max(parseInt(num), 1));
+  return newNum;
 }
 
 export async function GET(req) {
@@ -32,22 +37,61 @@ export async function GET(req) {
     const db = getFirestore();
     const url = new URL(req.url);
     const id = url.searchParams.get("id");
+    const page = Math.trunc(url.searchParams.get("page"));
 
     const isOwner = id == decoded.uid;
     const isAdmin = (await db.collection("admins").doc(decoded.uid).get())
       .exists;
 
     let querySnapshot;
+    let pages;
     if (isOwner || isAdmin) {
-      const q = db.collection("recipes").where("ownerId", "==", id).limit(4);
-      querySnapshot = await q.get();
+      pages = Math.ceil(
+        (await db.collection("recipes").where("ownerId", "==", id).get()).size /
+          4
+      );
+      if (page > pages) {
+        const q = db
+          .collection("recipes")
+          .where("ownerId", "==", id)
+          .offset((Math.max(pages, 1) - 1) * 4)
+          .limit(4);
+        querySnapshot = await q.get();
+      } else {
+        const q = db
+          .collection("recipes")
+          .where("ownerId", "==", id)
+          .offset((ForceCountInt(page) - 1) * 4)
+          .limit(4);
+        querySnapshot = await q.get();
+      }
     } else {
-      const q = db
-        .collection("recipes")
-        .where("ownerId", "==", id)
-        .where("validated", "==", true)
-        .limit(4);
-      querySnapshot = await q.get();
+      pages = Math.ceil(
+        (
+          await db
+            .collection("recipes")
+            .where("ownerId", "==", id)
+            .where("validated", "==", true)
+            .get()
+        ).size / 4
+      );
+      if (page > pages) {
+        const q = db
+          .collection("recipes")
+          .where("ownerId", "==", id)
+          .where("validated", "==", true)
+          .offset((pages - 1) * 4)
+          .limit(4);
+        querySnapshot = await q.get();
+      } else {
+        const q = db
+          .collection("recipes")
+          .where("ownerId", "==", id)
+          .where("validated", "==", true)
+          .offset((ForceCountInt(page) - 1) * 4)
+          .limit(4);
+        querySnapshot = await q.get();
+      }
     }
 
     const items = querySnapshot.docs.map((doc) => ({
@@ -55,10 +99,12 @@ export async function GET(req) {
       ...doc.data(),
     }));
     const nextCursor =
-      querySnapshot.size === 4 ? snap.docs[snap.docs.length - 1].id : null;
+      querySnapshot.size === 4
+        ? querySnapshot.docs[querySnapshot.docs.length - 1].id
+        : null;
 
     return NextResponse.json(
-      { items, nextCursor },
+      { items, nextCursor, pages },
       { headers: { "Cache-Control": "no-store" } }
     );
   } catch (error) {

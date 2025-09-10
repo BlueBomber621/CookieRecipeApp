@@ -61,6 +61,7 @@ export async function PUT(req) {
       .update({
         ...data,
         validated: false,
+        favorites: [],
         updatedAt: FieldValue.serverTimestamp(),
       });
 

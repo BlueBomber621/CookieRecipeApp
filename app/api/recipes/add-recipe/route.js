@@ -43,6 +43,7 @@ export async function POST(req) {
     delete data.validated;
     delete data.createdAt;
     delete data.updatedAt;
+    delete data.favorites;
 
     const db = getFirestore();
     const docRef = await db.collection("recipes").add({

@@ -9,8 +9,14 @@ export default function Navbar() {
   return (
     <nav className="border-b">
       <div className="mx-auto max-w-5xl flex flex-col md:flex-row items-center gap-4 px-2 py-3">
-        <a className="font-bold text-lg" href="/">
-          YourLogo
+        <a
+          className="font-bold text-lg bg-gradient-to-r 
+                    from-pastelmagenta-700 via-pastelyellow-700 to-pastelgreen-700 
+                    dark:from-pastelmagenta-300 dark:via-pastelyellow-300 dark:to-pastelgreen-300
+                    bg-clip-text text-transparent"
+          href="/"
+        >
+          Cookie Recipe App
         </a>
         <ul className="md:ml-auto flex gap-5">
           <li>
@@ -19,22 +25,6 @@ export default function Navbar() {
               className="text-center text-foreground hover:text-pastelyellow-500 hover:dark:text-pastelyellow-200"
             >
               Recipes
-            </a>
-          </li>
-          <li>
-            <a
-              href="#"
-              className="text-center text-foreground hover:text-pastelyellow-500 hover:dark:text-pastelyellow-200"
-            >
-              About
-            </a>
-          </li>
-          <li>
-            <a
-              href="#"
-              className="text-center text-foreground hover:text-pastelyellow-500 hover:dark:text-pastelyellow-200"
-            >
-              Contact
             </a>
           </li>
           {user ? (

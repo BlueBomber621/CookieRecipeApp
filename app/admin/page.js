@@ -9,6 +9,8 @@ export default function AdminGate() {
   const [status, setStatus] = useState("loading");
   const [data, setData] = useState([]);
   const { user, loading } = useContext(authContext);
+  const [page, setPage] = useState(1);
+  const [maxPages, setMaxPages] = useState(1);
 
   useEffect(() => {
     let canceled = false;
@@ -38,12 +40,15 @@ export default function AdminGate() {
         }
         if (!canceled) setStatus("yes");
 
-        const listResponse = await fetch("/api/recipes/waiting-recipes", {
-          method: "GET",
-          headers: { Authorization: `Bearer ${token}` },
-          cache: "no-store",
-          signal: ctrl.signal,
-        });
+        const listResponse = await fetch(
+          `/api/recipes/waiting-recipes?page=${encodeURIComponent(page)}`,
+          {
+            method: "GET",
+            headers: { Authorization: `Bearer ${token}` },
+            cache: "no-store",
+            signal: ctrl.signal,
+          }
+        );
 
         const listJson = await listResponse.json();
 
@@ -56,7 +61,13 @@ export default function AdminGate() {
           return;
         }
 
-        if (!canceled) setData(listJson.items ?? listJson);
+        if (!canceled) {
+          setData(listJson.items ?? listJson);
+          setMaxPages(listJson.pages ?? listJson);
+          if (page > listJson.pages ?? listJson) {
+            setPage(listJson.pages ?? listJson);
+          }
+        }
       } catch (error) {
         if (error?.name === "AbortError") return;
         console.error("admin fetch error:", error);
@@ -69,7 +80,7 @@ export default function AdminGate() {
       canceled = true;
       ctrl.abort();
     };
-  }, [user, loading]);
+  }, [user, loading, page]);
 
   if (loading || status === "loading") {
     return (
@@ -91,6 +102,27 @@ export default function AdminGate() {
     <div className="flex flex-col p-10">
       <h1 className="text-lg md:text-xl font-bold ml-5">Admin Controls</h1>
       <RecipeList linkPref={"/admin/recipe/"} recipes={data} />
+      {data && maxPages > 1 ? (
+        <div className="flex justify-center items-center gap-2 w-auto mt-[-1rem] md:mt-[-2rem] py-2">
+          <button
+            className="btn btn-primary btn-sm"
+            onClick={() => setPage(page - 1)}
+            disabled={page <= 1}
+          >
+            Prev
+          </button>
+          <span>
+            {page} / {maxPages}
+          </span>
+          <button
+            className="btn btn-primary btn-sm"
+            onClick={() => setPage(page + 1)}
+            disabled={page >= maxPages}
+          >
+            Next
+          </button>
+        </div>
+      ) : null}
     </div>
   );
 }

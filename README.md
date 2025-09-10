@@ -10,12 +10,13 @@ and the estimated time required. This app will also allow the ability to log in,
 This app will provide useful tools regarding the managing of recipes.
 
 1. Viewing of all recipes.
-2. Searching recipes by title/keywords, category, or other preference options provided. (In Update)
+2. Searching recipes by title/keywords, category, or other preference options provided.
 3. Viewing extended details of a single recipe.
-4. Favoriting recipes, searching for favorited recipes. (In Update)
-5. Login functionality.
-6. Using administrative tools provided to manage and validate recipes.
-7. Adding, editing, and deleting recipes.
+4. Favoriting recipes, searching for favorited recipes.
+5. Rating recipes and viewing rating averages of recipes.
+6. Login functionality.
+7. Using administrative tools provided to manage and validate recipes.
+8. Adding, editing, and deleting recipes.
 
 ## 🧰 Prerequisites
 
@@ -55,7 +56,9 @@ You will also have to define admins, which is done here by first initializing yo
 
 You will now additionally have to initialize your user, sign in with Google as your Google user of choice, you can do this by running the project with `npm run dev` and using the navbar directing to the login to find the login page, and to follow through with logging in with Google.
 
-When you log in with Google, it should add a user to Firebase Authentication. In the Build in the sidebar under the small Project Categories label, go to Authentication, and you should see your user in the 'Users' tab. There is the user ID (UID) as a value at the right of the user instance, and there should be a button to copy UID, select it and copy the UID. In the project sidebar go to Firestore Database under Build. Select your database of choice. In your database, under the Data tab which should be where you are at by default, select Start collection, name the collection id "admins" and continue. Paste the UID into the ID of the document makign the document ID the UID, and you may name a string value "uid" and paste the UID as the value.
+When you log in with Google, it should add a user to Firebase Authentication. In the Build in the sidebar under the small Project Categories label, go to Authentication, and you should see your user in the 'Users' tab. There is the user ID (UID) as a value at the right of the user instance, and there should be a button to copy UID, select it and copy the UID. In the project sidebar go to Firestore Database under Build. Select your database of choice. In your database, under the Data tab which should be where you are at by default, select Start collection, name the collection ID "admins" and continue. Paste the UID into the ID of the document makign the document ID the UID, and you may name a string value "uid" and paste the UID as the value.
+
+After you will need to go back into the database page and go to the 'Indexes' tab. Select 'Add Index', and under the collection ID field enter in "recipes". In the fields to index, set the first field path to "createdAt", and set the order to "Decending". In the second, set the field path to "validated" and keep it as "Ascending". Select "Add Field" once, and in the new third field set the field path to "`__name__`", that is with two underscores on each side, and keep the order as "Ascending". You should keep the query scope as "Collection", and then select 'Create'. This will take some time to complete the creation of the index.
 
 Now if you followed all these steps, your project should be ready to test with `npm run dev`! You can navigate to the pages and perform whatever actions you wish!
 

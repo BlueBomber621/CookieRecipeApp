@@ -21,19 +21,20 @@ function ForceCountInt(num) {
 }
 
 export async function GET(req) {
-  const authHeader = req.headers.get("authorization") || "";
-  const token = authHeader.startsWith("Bearer ") ? authHeader.slice(7) : null;
-  if (!token)
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-
   try {
-    const decoded = await getAuth().verifyIdToken(token);
-    const db = getFirestore();
-    const isAdmin = (await db.collection("admins").doc(decoded.uid).get())
-      .exists;
-    if (!isAdmin)
-      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    const authHeader = req.headers.get("authorization") || "";
+    const token = authHeader.startsWith("Bearer ") ? authHeader.slice(7) : null;
+    if (!token)
+      return NextResponse.json({ error: "Unauthenticated" }, { status: 401 });
 
+    let decoded;
+    try {
+      decoded = await getAuth().verifyIdToken(token);
+    } catch {
+      return NextResponse.json({ error: "Invalid Token" }, { status: 403 });
+    }
+
+    const db = getFirestore();
     const url = new URL(req.url);
     const page = url.searchParams.get("page");
 
@@ -45,34 +46,37 @@ export async function GET(req) {
           .where("favorites", "array-contains", decoded.uid)
           .where("validated", "==", true)
           .get()
-      ).size / 8
+      ).size / 4
     );
-
     if (page > pages) {
-      const query = getFirestore()
+      const q = db
         .collection("recipes")
-        .orderBy("createdAt", "desc")
-        .orderBy("validated")
-        .offset(Math.ceil(Math.max(pages, 1) - 1) * 8)
-        .limit(8);
-      querySnapshot = await query.get();
+        .where("favorites", "array-contains", decoded.uid)
+        .where("validated", "==", true)
+        .offset(Math.ceil(Math.max(pages, 1) - 1) * 4)
+        .limit(4);
+      querySnapshot = await q.get();
     } else {
-      const query = getFirestore()
+      const q = db
         .collection("recipes")
-        .orderBy("createdAt", "desc")
-        .orderBy("validated")
-        .offset(Math.ceil((ForceCountInt(page) - 1) * 8))
-        .limit(8);
-      querySnapshot = await query.get();
+        .where("favorites", "array-contains", decoded.uid)
+        .where("validated", "==", true)
+        .offset(Math.ceil((ForceCountInt(page) - 1) * 4))
+        .limit(4);
+      querySnapshot = await q.get();
     }
 
     const items = querySnapshot.docs.map((doc) => ({
       id: doc.id,
       ...doc.data(),
     }));
+    const nextCursor =
+      querySnapshot.size === 4
+        ? querySnapshot.docs[querySnapshot.docs.length - 1].id
+        : null;
 
     return NextResponse.json(
-      { items, pages },
+      { items, nextCursor, pages },
       { headers: { "Cache-Control": "no-store" } }
     );
   } catch (error) {

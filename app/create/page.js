@@ -4,7 +4,7 @@ import { appContext } from "@/lib/store/app-context";
 import { authContext } from "@/lib/store/auth-context";
 import { redirect } from "next/navigation";
 import { useContext, useEffect, useState } from "react";
-import { FaInfoCircle } from "react-icons/fa";
+import { FaInfoCircle, FaMinus } from "react-icons/fa";
 
 export default function CreatePage() {
   const { user, loading } = useContext(authContext);
@@ -32,12 +32,15 @@ export default function CreatePage() {
     ingredients: [""],
     instructions: [""],
     categories: [],
+    categories: [],
     imageurl: "",
   });
   const [ingredientListLength, setIngredientListLength] = useState(1);
   const [showIngredientTip, setShowIngredientTip] = useState(false);
   const [instructionListLength, setInstructionListLength] = useState(1);
   const [showInstructionTip, setShowInstructionTip] = useState(false);
+  const [categoryInput, setCategoryInput] = useState("");
+  const [showCategoryTip, setShowCategoryTip] = useState(false);
 
   function ClampInt(value, max, min, nullValue) {
     if (Number.isNaN(value)) return nullValue;
@@ -106,6 +109,36 @@ export default function CreatePage() {
     });
   }
 
+  function CommitCategory(input) {
+    if (!input.toLowerCase().trim()) return;
+    setFormData((prev) => ({
+      ...prev,
+      categories: Array.from(
+        new Set([...(prev.categories ?? []), input.toLowerCase().trim()])
+      ),
+    }));
+    setCategoryInput("");
+  }
+
+  function OnCategoryAdd(e) {
+    e.preventDefault();
+    CommitCategory(categoryInput);
+  }
+
+  function OnCategoryKeyDown(e) {
+    if (e.key === "Enter" || e.key === ",") {
+      e.preventDefault();
+      CommitCategory(categoryInput);
+    }
+  }
+
+  function OnCategoryRemove(category) {
+    setFormData((prev) => ({
+      ...prev,
+      categories: (prev.categories ?? []).filter((c) => c !== category),
+    }));
+  }
+
   function HandleFormSubmit(e) {
     e.preventDefault();
     addRecipe(formData);
@@ -115,7 +148,7 @@ export default function CreatePage() {
   if (loading) {
     return (
       <div className="p-10">
-        <div className="w-full min-h-[320px] rounded-2xl bg-neutral-200/80 animate-pulse shadow-sm" />
+        <div className="w-full min-h-[380px] rounded-2xl bg-neutral-200/80 animate-pulse shadow-sm" />
       </div>
     );
   }
@@ -358,7 +391,83 @@ export default function CreatePage() {
                 })}
               </div>
             </div>
-            <button type="submit" className="btn btn-primary">
+            <div className="flex flex-col gap-2">
+              <div className="flex items-center gap-2">
+                <label
+                  className="text-sm md:text-md font-bold color-pastelyellow-800 dark:color-pastelyellow-100"
+                  htmlFor="categoryInput"
+                >
+                  Add Categories:
+                </label>
+
+                <input
+                  className="w-[200px] pl-2"
+                  id="categoryInput"
+                  name="categoryInput"
+                  type="text"
+                  maxLength={72}
+                  placeholder='e.g. "vegetarian", "quick"'
+                  value={categoryInput}
+                  onChange={(e) => setCategoryInput(e.target.value)}
+                  onKeyDown={OnCategoryKeyDown}
+                />
+
+                <button
+                  type="button"
+                  className="btn btn-primary px-2 rounded-md border"
+                  onClick={OnCategoryAdd}
+                >
+                  Add
+                </button>
+              </div>
+              <div className="flex">
+                <div className="w-[16px] h-[16px]">
+                  <FaInfoCircle
+                    fill="var(--color-pastelgreen-500)"
+                    onClick={() => {
+                      setShowCategoryTip(!showCategoryTip);
+                    }}
+                  />
+                </div>
+
+                {showCategoryTip ? (
+                  <p className="text-sm md:text-md text-center text-pastelyellow-800 dark:text-pastelyellow-100">
+                    Category entries should be keywords you would use to
+                    describe this recipe. Refrain from arbitrarily long
+                    descriptors in a single category entry. 1-2 word entries may
+                    work best.
+                  </p>
+                ) : null}
+              </div>
+              {formData.categories.length > 0 ? (
+                <div className="flex flex-col gap-1 p-4 bg-background w-full rounded-md min-h-[44px]">
+                  <div className="flex flex-wrap gap-2">
+                    {(formData.categories ?? []).map((category) => (
+                      <span
+                        key={category}
+                        className="inline-flex items-center gap-1 px-2 py-1 rounded-full border text-sm"
+                      >
+                        {category}
+                        <button
+                          type="button"
+                          className="ml-1 text-xs opacity-70 hover:opacity-100"
+                          onClick={() => OnCategoryRemove(category)}
+                          aria-label={`Remove ${category}`}
+                          title="Remove"
+                        >
+                          <FaMinus />
+                        </button>
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              ) : null}
+            </div>
+            <button
+              type="submit"
+              className="btn btn-primary"
+              aria-label="Submit Recipe Creation"
+            >
               Submit Recipe
             </button>
           </form>
